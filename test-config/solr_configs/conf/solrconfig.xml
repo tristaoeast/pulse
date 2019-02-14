@@ -148,17 +148,6 @@
          -->
 
         <unlockOnStartup>true</unlockOnStartup>
-
-
-        <!-- Lucene Infostream
-
-             To aid in advanced debugging, Lucene provides an "InfoStream"
-             of detailed information when indexing.
-
-             Setting The value to true will instruct the underlying Lucene
-             IndexWriter to write its debugging info the specified file
-          -->
-        <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> -->
     </indexConfig>
 
 
@@ -390,41 +379,6 @@
           -->
         <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
-        <!-- Query Related Event Listeners
-
-             Various IndexSearcher related events can trigger Listeners to
-             take actions.
-
-             newSearcher - fired whenever a new searcher is being prepared
-             and there is a current searcher handling requests (aka
-             registered).  It can be used to prime certain caches to
-             prevent long request times for certain requests.
-
-             firstSearcher - fired whenever a new searcher is being
-             prepared but there is no current registered searcher to handle
-             requests or to gain autowarming data from.
-
-
-          -->
-        <!-- QuerySenderListener takes an array of NamedList and executes a
-             local query request for each NamedList in sequence.
-          -->
-        <listener event="newSearcher" class="solr.QuerySenderListener">
-            <arr name="queries">
-                <!--
-                   <lst><str name="q">solr</str><str name="sort">price asc</str></lst>
-                   <lst><str name="q">rocks</str><str name="sort">weight asc</str></lst>
-                  -->
-            </arr>
-        </listener>
-        <listener event="firstSearcher" class="solr.QuerySenderListener">
-            <arr name="queries">
-                <lst>
-                    <str name="q">static firstSearcher warming in solrconfig.xml</str>
-                </lst>
-            </arr>
-        </listener>
-
         <!-- Use Cold Searcher
 
              If a search request comes in and there is no current
@@ -485,6 +439,13 @@
              POST. You can use POST to pass request parameters not
              fitting into the URL.
 
+             addHttpRequestToContext - if set to true, it will instruct
+             the requestParsers to include the original HttpServletRequest
+             object in the context map of the SolrQueryRequest under the
+             key "httpRequest". It will not be used by any of the existing
+             Solr components, but may be useful when developing custom
+             plugins.
+
              *** WARNING ***
              The settings below authorize Solr to fetch remote files, You
              should make sure your system has some authentication before
@@ -503,51 +464,7 @@
              related headers
           -->
         <httpCaching never304="true" />
-        <!-- If you include a <cacheControl> directive, it will be used to
-             generate a Cache-Control header (as well as an Expires header
-             if the value contains "max-age=")
 
-             By default, no Cache-Control header is generated.
-
-             You can use the <cacheControl> option even if you have set
-             never304="true"
-          -->
-        <!--
-           <httpCaching never304="true" >
-             <cacheControl>max-age=30, public</cacheControl>
-           </httpCaching>
-          -->
-        <!-- To enable Solr to respond with automatically generated HTTP
-             Caching headers, and to response to Cache Validation requests
-             correctly, set the value of never304="false"
-
-             This will cause Solr to generate Last-Modified and ETag
-             headers based on the properties of the Index.
-
-             The following options can also be specified to affect the
-             values of these headers...
-
-             lastModFrom - the default value is "openTime" which means the
-             Last-Modified value (and validation against If-Modified-Since
-             requests) will all be relative to when the current Searcher
-             was opened.  You can change it to lastModFrom="dirLastMod" if
-             you want the value to exactly correspond to when the physical
-             index was last modified.
-
-             etagSeed="..." is an option you can change to force the ETag
-             header (and validation against If-None-Match requests) to be
-             different even if the index has not changed (ie: when making
-             significant changes to your config file)
-
-             (lastModifiedFrom and etagSeed are both ignored if you use
-             the never304="true" option)
-          -->
-        <!--
-           <httpCaching lastModifiedFrom="openTime"
-                        etagSeed="Solr">
-             <cacheControl>max-age=30, public</cacheControl>
-           </httpCaching>
-          -->
     </requestDispatcher>
 
     <!-- Request Handlers
@@ -632,15 +549,7 @@
          if the 'wt' parameter is not explicit
       -->
     <requestHandler name="/update" class="solr.UpdateRequestHandler">
-        <!-- See below for information on defining
-             updateRequestProcessorChains that can be used by name
-             on each Update Request
-          -->
-        <!--
-           <lst name="defaults">
-             <str name="update.chain">dedupe</str>
-           </lst>
-           -->
+
     </requestHandler>
 
     <!-- for back compat with clients using /update/json and /update/csv -->
@@ -650,25 +559,13 @@
         </lst>
     </requestHandler>
 
-    <!-- Solr Cell Update Request Handler
-
-         http://wiki.apache.org/solr/ExtractingRequestHandler
-
-      -->
-    <requestHandler name="/update/extract"
-                    startup="lazy"
-                    class="solr.extraction.ExtractingRequestHandler" >
-        <lst name="defaults">
-            <str name="lowernames">true</str>
-            <str name="uprefix">ignored_</str>
-
-            <!-- capture link hrefs but ignore div attributes -->
-            <str name="captureAttr">true</str>
-            <str name="fmap.a">links</str>
-            <str name="fmap.div">ignored_</str>
-        </lst>
-    </requestHandler>
-
+    <updateRequestProcessorChain>
+        <processor class="solr.UUIDUpdateProcessorFactory">
+            <str name="fieldName">id</str>
+        </processor>
+        <processor class="solr.LogUpdateProcessorFactory" />
+        <processor class="solr.RunUpdateProcessorFactory" />
+    </updateRequestProcessorChain>
 
     <!-- Field Analysis Request Handler
 
@@ -734,27 +631,6 @@
       -->
     <requestHandler name="/admin/"
                     class="solr.admin.AdminHandlers" />
-    <!-- This single handler is equivalent to the following... -->
-    <!--
-       <requestHandler name="/admin/luke"       class="solr.admin.LukeRequestHandler" />
-       <requestHandler name="/admin/system"     class="solr.admin.SystemInfoHandler" />
-       <requestHandler name="/admin/plugins"    class="solr.admin.PluginInfoHandler" />
-       <requestHandler name="/admin/threads"    class="solr.admin.ThreadDumpHandler" />
-       <requestHandler name="/admin/properties" class="solr.admin.PropertiesRequestHandler" />
-       <requestHandler name="/admin/file"       class="solr.admin.ShowFileRequestHandler" >
-      -->
-    <!-- If you wish to hide files under ${solr.home}/conf, explicitly
-         register the ShowFileRequestHandler using:
-      -->
-    <!--
-       <requestHandler name="/admin/file"
-                       class="solr.admin.ShowFileRequestHandler" >
-         <lst name="invariants">
-           <str name="hidden">synonyms.txt</str>
-           <str name="hidden">anotherfile.txt</str>
-         </lst>
-       </requestHandler>
-      -->
 
     <!-- ping/healthcheck -->
     <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
@@ -764,12 +640,6 @@
         <lst name="defaults">
             <str name="echoParams">all</str>
         </lst>
-        <!-- An optional feature of the PingRequestHandler is to configure the
-             handler with a "healthcheckFile" which can be used to enable/disable
-             the PingRequestHandler.
-             relative paths are resolved against the data dir
-          -->
-        <!-- <str name="healthcheckFile">server-enabled.txt</str> -->
     </requestHandler>
 
     <!-- Echo the request contents back to the client -->
@@ -779,15 +649,6 @@
             <str name="echoHandler">true</str>
         </lst>
     </requestHandler>
-
-
-    <updateRequestProcessorChain>
-        <processor class="solr.UUIDUpdateProcessorFactory">
-            <str name="fieldName">id</str>
-        </processor>
-        <processor class="solr.LogUpdateProcessorFactory" />
-        <processor class="solr.RunUpdateProcessorFactory" />
-    </updateRequestProcessorChain>
 
     <queryResponseWriter name="json" class="solr.JSONResponseWriter">
         <!-- For the purposes of the tutorial, JSON responses are written as
@@ -801,7 +662,6 @@
        Custom response writers can be declared as needed...
       -->
     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy"/>
-
 
     <!-- XSLT response writer transforms the XML output by any xslt file found
          in Solr's conf/xslt directory.  Changes to xslt files are checked for
