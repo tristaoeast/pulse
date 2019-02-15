@@ -125,23 +125,12 @@
        Note: This replaces <indexDefaults> and <mainIndex> from older versions
        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
   <indexConfig>
-    <!-- maxFieldLength was removed in 4.0. To get similar behavior, include a 
-         LimitTokenCountFilterFactory in your fieldType definition. E.g. 
-     <filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="10000"/>
-    -->
-    <!-- Maximum time to wait for a write lock (ms) for an IndexWriter. Default: 1000 -->
-    <!-- <writeLockTimeout>1000</writeLockTimeout>  -->
 
     <!-- The maximum number of simultaneous threads that may be
          indexing documents at once in IndexWriter; if more than this
          many threads arrive they will wait for others to finish.
          Default in Solr/Lucene is 8. -->
          <maxIndexingThreads>${solr.maxIndexingThreads:8}</maxIndexingThreads>
-
-    <!-- Expert: Enabling compound file will use less files for the index, 
-         using fewer file descriptors on the expense of performance decrease. 
-         Default in Lucene is "true". Default in Solr is "false" (since 3.6) -->
-    <!-- <useCompoundFile>false</useCompoundFile> -->
 
     <!-- ramBufferSizeMB sets the amount of RAM that may be used by Lucene
          indexing for buffering added documents and deletions before they are
@@ -151,25 +140,15 @@
          If both ramBufferSizeMB and maxBufferedDocs is set, then
          Lucene will flush based on whichever limit is hit first.  -->
          <ramBufferSizeMB>128</ramBufferSizeMB> 
-    <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
       <lockType>${solr.lock.type:hdfs}</lockType>
 
-    <!-- Unlock On Startup
+    <!--The InfoStream setting instructs the underlying Lucene classes
+    to write detailed debug information from the indexing process as Solr log
+    messages.-->
 
-         If true, unlock any held write or commit locks on startup.
-         This defeats the locking mechanism that allows multiple
-         processes to safely access a lucene index, and should be used
-         with care. Default is "false".
+    <infoStream>true</infoStream>
 
-         This is not needed if lock type is 'single'
-     -->
-
-    <!--
-    <unlockOnStartup>false</unlockOnStartup>
-      -->
-
-     <infoStream>true</infoStream>
   </indexConfig>
 
 
@@ -183,13 +162,6 @@
        For more details see http://wiki.apache.org/solr/SolrJmx
     -->
   <jmx />
-  <!-- If you want to connect to a particular server, specify the
-       agentId 
-    -->
-  <!-- <jmx agentId="myAgent" /> -->
-  <!-- If you want to start a new MBeanServer, specify the serviceUrl -->
-  <!-- <jmx serviceUrl="service:jmx:rmi:///jndi/rmi://localhost:9999/solr"/>
-    -->
 
   <!-- The default high-performance update handler -->
   <updateHandler class="solr.DirectUpdateHandler2">
@@ -242,43 +214,6 @@
      </autoSoftCommit>
 
   </updateHandler>
-  
-  <!-- IndexReaderFactory
-
-       Use the following format to specify a custom IndexReaderFactory,
-       which allows for alternate IndexReader implementations.
-
-       ** Experimental Feature **
-
-       Please note - Using a custom IndexReaderFactory may prevent
-       certain other features from working. The API to
-       IndexReaderFactory may change without warning or may even be
-       removed from future releases if the problems cannot be
-       resolved.
-
-
-       ** Features that may not work with custom IndexReaderFactory **
-
-       The ReplicationHandler assumes a disk-resident index. Using a
-       custom IndexReader implementation may cause incompatibility
-       with ReplicationHandler and may cause replication to not work
-       correctly. See SOLR-1366 for details.
-
-    -->
-  <!--
-  <indexReaderFactory name="IndexReaderFactory" class="package.class">
-    <str name="someArg">Some Value</str>
-  </indexReaderFactory >
-  -->
-  <!-- By explicitly declaring the Factory, the termIndexDivisor can
-       be specified.
-    -->
-  <!--
-     <indexReaderFactory name="IndexReaderFactory" 
-                         class="solr.StandardIndexReaderFactory">
-       <int name="setTermIndexDivisor">12</int>
-     </indexReaderFactory >
-    -->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Query section - these settings control query time things like caches
@@ -356,7 +291,6 @@
                    size="512"
                    initialSize="512"
                    autowarmCount="0"/>
-
 
     <!-- Lazy Field Loading
 
